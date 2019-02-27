@@ -24,13 +24,10 @@ export function createReducer<TState = any>(
   return function(state: any = initialState, action: Action) {
     const actionMeta = actions[action.type];
     if (actionMeta) {
-      const result = instance[actionMeta.fn](state, action);
+      const newStateInstance = Array.isArray(state) ? [...state] : { ...state };
+      let result = instance[actionMeta.fn](newStateInstance, action);
       if (result === undefined) {
-        if (Array.isArray(state)) {
-          return [...state];
-        } else {
-          return { ...state };
-        }
+        result = newStateInstance;
       }
       state = result;
     }
