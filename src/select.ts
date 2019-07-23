@@ -9,8 +9,6 @@ export class NgrxSelect {
   }
 }
 
-const selectorsKey = Symbol();
-
 export function Select<TState = any, TValue = any>(
   selector: Selector<TState, TValue>
 ): (target: any, name: string) => void;
@@ -28,7 +26,6 @@ export function Select<TState = any, TValue = any>(
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
-    const selectorFnName = '__' + name + '__selector';
     let fn: Selector<TState, TValue>;
     // Nothing here? Use propery name as selector
     if (!selectorOrFeature) {
@@ -50,26 +47,18 @@ export function Select<TState = any, TValue = any>(
       return store.select(fn);
     };
 
-    if (target[selectorFnName]) {
-      throw new Error('You cannot use @Select decorator and a ' + selectorFnName + ' property.');
-    }
-
     // Redefine property
     if (delete target[name]) {
-      Object.defineProperty(target, selectorsKey, {
-        writable: false,
-        enumerable: false,
-        configurable: false,
-        value: {}
-      });
-
       Object.defineProperty(target, name, {
         get: function() {
-          if (!NgrxSelect.store) {
-            return undefined;
+          // @ts-ignore
+          if (typeof __selector__fn_variable__name__ === 'undefined') {
+            // tslint:disable-next-line
+            var __selector__fn_variable__name__ = createSelect.apply(this);
           }
 
-          return this[selectorsKey][selectorFnName] || (this[selectorsKey][selectorFnName] = createSelect.apply(this));
+          // @ts-ignore
+          return __selector__fn_variable__name__;
         },
         enumerable: true,
         configurable: true
