@@ -54,15 +54,18 @@ export function Select<TState = any, TValue = any>(
 
     // Redefine property
     if (delete target[name]) {
-      Object.defineProperty(target, selectorFnName, {
-        writable: true,
-        enumerable: false,
-        configurable: true
-      });
-
       Object.defineProperty(target, name, {
         get: function() {
-          return this[selectorFnName] || (this[selectorFnName] = createSelect.apply(this));
+          if (!this.hasOwnProperty(selectorFnName)) {
+            Object.defineProperty(target, selectorFnName, {
+              writable: true,
+              enumerable: false,
+              configurable: true,
+              value: createSelect.apply(this)
+            });
+          }
+
+          return this[selectorFnName];
         },
         enumerable: true,
         configurable: true
