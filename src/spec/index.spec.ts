@@ -216,7 +216,10 @@ describe('actions', () => {
     };
 
     const msFeature = createFeatureSelector<FooState>('myFeature');
-    const msBar = createSelector(msFeature, state => state.bar);
+    const msBar = createSelector(
+      msFeature,
+      state => state.bar
+    );
 
     class MyStateSelector {
       @Select('myFeature.bar.a.b.c.d') hello$: Observable<string>; // deeply nested props

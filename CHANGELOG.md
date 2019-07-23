@@ -1,3 +1,5 @@
+# 8.0.0
+Angular/ngrx 8 support
 # 4.0.0 - 6/5/18
 - BREAKING: Angular/Rx6 Support
 

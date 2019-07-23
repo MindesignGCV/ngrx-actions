@@ -1,6 +1,6 @@
 {
   "name": "ngrx-actions",
-  "version": "4.0.1",
+  "version": "8.0.0",
   "description": "Actions and Reducer Utility Library for NGRX",
   "main": "dist/index.js",
   "scripts": {
@@ -46,7 +46,7 @@
     "rxjs": "^6.5.2",
     "tsickle": "^0.36.0",
     "tslint": "^5.18.0",
-    "typescript": "~3.5.3",
+    "typescript": "^3.4.5",
     "zone.js": "^0.9.1"
   },
   "ngPackage": {
