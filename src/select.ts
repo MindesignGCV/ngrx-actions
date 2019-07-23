@@ -9,6 +9,8 @@ export class NgrxSelect {
   }
 }
 
+const selectorsKey = Symbol();
+
 export function Select<TState = any, TValue = any>(
   selector: Selector<TState, TValue>
 ): (target: any, name: string) => void;
@@ -54,18 +56,20 @@ export function Select<TState = any, TValue = any>(
 
     // Redefine property
     if (delete target[name]) {
+      Object.defineProperty(target, selectorsKey, {
+        writable: false,
+        enumerable: false,
+        configurable: false,
+        value: {}
+      });
+
       Object.defineProperty(target, name, {
         get: function() {
-          if (!this.hasOwnProperty(selectorFnName)) {
-            Object.defineProperty(target, selectorFnName, {
-              writable: true,
-              enumerable: false,
-              configurable: true,
-              value: createSelect.apply(this)
-            });
+          if (!NgrxSelect.store) {
+            return undefined;
           }
 
-          return this[selectorFnName];
+          return this[selectorsKey][selectorFnName] || (this[selectorsKey][selectorFnName] = createSelect.apply(this));
         },
         enumerable: true,
         configurable: true
