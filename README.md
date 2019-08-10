@@ -206,9 +206,10 @@ export class MyComponent {
 
     // Auto subscribe and take until specific observable
     destroy$: Subject<any> = new Subject();
-    @Select(this.destroy$) color: string;
+    @Select('my.prop.color', true) color: string;
     // or
-    @Select('my.prop.color', this.destroy$) color: string;
+    takeUntilProp$: Subject<any> = new Subject();
+    @Select('my.prop.color', true, 'takeUntilProp$') color: string;
 
     // Remap the slice to a new object
     @Select(state => state.map(f => 'blue')) color$: Observable<string>;
