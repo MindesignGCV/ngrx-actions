@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
+import { Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Injectable()
 export class NgrxSelect {
@@ -9,34 +11,32 @@ export class NgrxSelect {
   }
 }
 
-export function Select<TState = any, TValue = any>(
-  selector: Selector<TState, TValue>
-): (target: any, name: string) => void;
-
-export function Select<TState = any, TValue = any>(
-  selectorOrFeature?: string,
-  ...paths: string[]
-): (target: any, name: string) => void;
-
 /**
  * Slice state from the store.
  */
 export function Select<TState = any, TValue = any>(
-  selectorOrFeature?: string | Selector<TState, TValue>,
+  selectorOrFeatureOrObservableForTakeUntil?: string | Selector<TState, TValue> | Observable<any>,
+  observableForTakeUntil?: Observable<any>,
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
     let fn: Selector<TState, TValue>;
-    // Nothing here? Use propery name as selector
-    if (!selectorOrFeature) {
-      selectorOrFeature = name;
+    // Nothing here? Use properly name as selector
+    if (!selectorOrFeatureOrObservableForTakeUntil) {
+      selectorOrFeatureOrObservableForTakeUntil = name;
+    }
+    if (selectorOrFeatureOrObservableForTakeUntil instanceof Observable) {
+      observableForTakeUntil = selectorOrFeatureOrObservableForTakeUntil;
+      selectorOrFeatureOrObservableForTakeUntil = name;
     }
     // Handle string vs Selector<TState, TValue>
-    if (typeof selectorOrFeature === 'string') {
-      const propsArray = paths.length ? [selectorOrFeature, ...paths] : selectorOrFeature.split('.');
+    if (typeof selectorOrFeatureOrObservableForTakeUntil === 'string') {
+      const propsArray = paths.length
+        ? [selectorOrFeatureOrObservableForTakeUntil, ...paths]
+        : selectorOrFeatureOrObservableForTakeUntil.split('.');
       fn = fastPropGetter(propsArray);
     } else {
-      fn = selectorOrFeature;
+      fn = selectorOrFeatureOrObservableForTakeUntil;
     }
 
     const createSelect = () => {
@@ -47,8 +47,14 @@ export function Select<TState = any, TValue = any>(
       return store.select(fn);
     };
 
-    // Redefine property
-    if (delete target[name]) {
+    if (observableForTakeUntil) {
+      createSelect()
+        .pipe(takeUntil(observableForTakeUntil))
+        .subscribe(value => {
+          target[name] = value;
+        });
+    } else if (delete target[name]) {
+      // Redefine property
       Object.defineProperty(target, name, {
         get: function() {
           // @ts-ignore

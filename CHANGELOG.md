@@ -1,3 +1,6 @@
+# 8.1.0
+- Support automatic subscribe and take until specific observable
+
 # 8.0.0
 Angular/ngrx 8 support
 # 4.0.0 - 6/5/18

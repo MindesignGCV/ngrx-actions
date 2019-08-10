@@ -191,6 +191,7 @@ We didn't leave out selectors, there is a `Select` decorator that accepts a (dee
 ```javascript
 @Component({ ... })
 export class MyComponent {
+
     // Functions
     @Select((state) => state.color) color$: Observable<string>;
 
@@ -202,6 +203,12 @@ export class MyComponent {
 
     // Implied by the name of the member
     @Select() color: Observable<string>;
+
+    // Auto subscribe and take until specific observable
+    destroy$: Subject<any> = new Subject();
+    @Select(this.destroy$) color: string;
+    // or
+    @Select('my.prop.color', this.destroy$) color: string;
 
     // Remap the slice to a new object
     @Select(state => state.map(f => 'blue')) color$: Observable<string>;
