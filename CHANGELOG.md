@@ -1,3 +1,6 @@
+# 8.2.0
+- Changed automatic subscription params, now it not receives Observable, pass property name(that is observable for takeUntil) instead  
+
 # 8.1.0
 - Support automatic subscribe and take until specific observable
 

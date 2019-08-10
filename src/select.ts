@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
-import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Injectable()
@@ -15,28 +14,23 @@ export class NgrxSelect {
  * Slice state from the store.
  */
 export function Select<TState = any, TValue = any>(
-  selectorOrFeatureOrObservableForTakeUntil?: string | Selector<TState, TValue> | Observable<any>,
-  observableForTakeUntil?: Observable<any>,
+  selectorOrFeature?: string | Selector<TState, TValue>,
+  autoSubscribe: boolean = false,
+  takeUntilProp: string = 'destroy$',
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
     let fn: Selector<TState, TValue>;
     // Nothing here? Use properly name as selector
-    if (!selectorOrFeatureOrObservableForTakeUntil) {
-      selectorOrFeatureOrObservableForTakeUntil = name;
-    }
-    if (selectorOrFeatureOrObservableForTakeUntil instanceof Observable) {
-      observableForTakeUntil = selectorOrFeatureOrObservableForTakeUntil;
-      selectorOrFeatureOrObservableForTakeUntil = name;
+    if (!selectorOrFeature) {
+      selectorOrFeature = name;
     }
     // Handle string vs Selector<TState, TValue>
-    if (typeof selectorOrFeatureOrObservableForTakeUntil === 'string') {
-      const propsArray = paths.length
-        ? [selectorOrFeatureOrObservableForTakeUntil, ...paths]
-        : selectorOrFeatureOrObservableForTakeUntil.split('.');
+    if (typeof selectorOrFeature === 'string') {
+      const propsArray = paths.length ? [selectorOrFeature, ...paths] : selectorOrFeature.split('.');
       fn = fastPropGetter(propsArray);
     } else {
-      fn = selectorOrFeatureOrObservableForTakeUntil;
+      fn = selectorOrFeature;
     }
 
     const createSelect = () => {
@@ -47,9 +41,13 @@ export function Select<TState = any, TValue = any>(
       return store.select(fn);
     };
 
-    if (observableForTakeUntil) {
+    if (autoSubscribe) {
+      if (!target[takeUntilProp]) {
+        throw new Error(`Take until prop "${takeUntilProp}" is not exists`);
+      }
+
       createSelect()
-        .pipe(takeUntil(observableForTakeUntil))
+        .pipe(takeUntil(target[takeUntilProp]))
         .subscribe(value => {
           target[name] = value;
         });
