@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
-import { Subscription } from 'rxjs';
 
 @Injectable()
 export class NgrxSelect {
@@ -54,22 +53,20 @@ export function Select<TState = any, TValue = any>(
 
       if (!target[NgrxSelect.initSubscriptionsFnProp]) {
         target[NgrxSelect.initSubscriptionsFnProp] = () => {
-          const subscriptions: { [name: string]: Subscription } = {};
+          target[NgrxSelect.subscriptionsProp] = {};
 
           for (const selectorName of target[NgrxSelect.selectorNamesProp]) {
-            subscriptions[selectorName] = createSelect().subscribe(value => {
+            target[NgrxSelect.subscriptionsProp] = createSelect().subscribe(value => {
               target[selectorName] = value;
             });
           }
-
-          return subscriptions;
         };
       }
 
       const ngOnInitFn = target['ngOnInit'];
       const initSubscriptionsFn = () => {
         if (!target[NgrxSelect.subscriptionsProp] && target[NgrxSelect.initSubscriptionsFnProp]) {
-          target[NgrxSelect.subscriptionsProp] = target[NgrxSelect.initSubscriptionsFnProp]();
+          target[NgrxSelect.initSubscriptionsFnProp]();
         }
       };
       if (!ngOnInitFn) {
@@ -86,6 +83,8 @@ export function Select<TState = any, TValue = any>(
           Object.keys(target[NgrxSelect.subscriptionsProp]).forEach(key => {
             target[NgrxSelect.subscriptionsProp][key].unsubscribe();
           });
+
+          target[NgrxSelect.subscriptionsProp] = null;
         }
       };
 
