@@ -52,39 +52,45 @@ export function Select<TState = any, TValue = any>(
       }
 
       if (!target[NgrxSelect.initSubscriptionsFnProp]) {
-        target[NgrxSelect.initSubscriptionsFnProp] = () => {
-          target[NgrxSelect.subscriptionsProp] = {};
+        target[NgrxSelect.initSubscriptionsFnProp] = function() {
+          this[NgrxSelect.subscriptionsProp] = {};
 
-          for (const selectorName of target[NgrxSelect.selectorNamesProp]) {
-            target[NgrxSelect.subscriptionsProp] = createSelect().subscribe(value => {
-              target[selectorName] = value;
+          for (const selectorName of this[NgrxSelect.selectorNamesProp]) {
+            this[NgrxSelect.subscriptionsProp][selectorName] = createSelect().subscribe(value => {
+              this[selectorName] = value;
             });
           }
         };
       }
 
       const ngOnInitFn = target['ngOnInit'];
-      const initSubscriptionsFn = () => {
-        if (!target[NgrxSelect.subscriptionsProp] && target[NgrxSelect.initSubscriptionsFnProp]) {
-          target[NgrxSelect.initSubscriptionsFnProp]();
+      const initSubscriptionsFn = function() {
+        // @ts-ignore
+        if (!this[NgrxSelect.subscriptionsProp] && this[NgrxSelect.initSubscriptionsFnProp]) {
+          // @ts-ignore
+          this[NgrxSelect.initSubscriptionsFnProp]();
         }
       };
       if (!ngOnInitFn) {
         target['ngOnInit'] = initSubscriptionsFn;
       } else {
-        target['ngOnInit'] = () => {
-          initSubscriptionsFn();
-          ngOnInitFn();
+        target['ngOnInit'] = function() {
+          initSubscriptionsFn.bind(this)();
+          ngOnInitFn.bind(this)();
         };
       }
 
-      const cleanSubscriptionsFn = () => {
-        if (target[NgrxSelect.subscriptionsProp]) {
-          Object.keys(target[NgrxSelect.subscriptionsProp]).forEach(key => {
-            target[NgrxSelect.subscriptionsProp][key].unsubscribe();
+      const cleanSubscriptionsFn = function() {
+        // @ts-ignore
+        if (this[NgrxSelect.subscriptionsProp]) {
+          // @ts-ignore
+          Object.keys(this[NgrxSelect.subscriptionsProp]).forEach(key => {
+            // @ts-ignore
+            this[NgrxSelect.subscriptionsProp][key].unsubscribe();
           });
 
-          target[NgrxSelect.subscriptionsProp] = null;
+          // @ts-ignore
+          this[NgrxSelect.subscriptionsProp] = null;
         }
       };
 
@@ -92,9 +98,9 @@ export function Select<TState = any, TValue = any>(
       if (!ngOnDestroyFn) {
         target['ngOnDestroy'] = cleanSubscriptionsFn;
       } else {
-        target['ngOnDestroy'] = () => {
-          cleanSubscriptionsFn();
-          ngOnDestroyFn();
+        target['ngOnDestroy'] = function() {
+          cleanSubscriptionsFn.bind(this)();
+          ngOnDestroyFn.bind(this)();
         };
       }
     } else if (delete target[name]) {
