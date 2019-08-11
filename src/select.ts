@@ -4,7 +4,7 @@ import { Store, Selector } from '@ngrx/store';
 @Injectable()
 export class NgrxSelect {
   static store: Store<any> | undefined = undefined;
-  static selectorNamesProp = Symbol();
+  static selectorsProp = Symbol();
   static subscriptionsProp = Symbol();
   static initSubscriptionsFnProp = Symbol();
   connect(store: Store<any>) {
@@ -43,22 +43,24 @@ export function Select<TState = any, TValue = any>(
     };
 
     if (autoSubscribe) {
-      if (!target[NgrxSelect.selectorNamesProp]) {
-        target[NgrxSelect.selectorNamesProp] = [];
+      if (!target[NgrxSelect.selectorsProp]) {
+        target[NgrxSelect.selectorsProp] = {};
       }
 
-      if (!target[NgrxSelect.selectorNamesProp].includes(name)) {
-        target[NgrxSelect.selectorNamesProp].push(name);
+      if (!target[NgrxSelect.selectorsProp][name]) {
+        target[NgrxSelect.selectorsProp][name] = createSelect;
       }
 
       if (!target[NgrxSelect.initSubscriptionsFnProp]) {
         target[NgrxSelect.initSubscriptionsFnProp] = function() {
           this[NgrxSelect.subscriptionsProp] = {};
 
-          for (const selectorName of this[NgrxSelect.selectorNamesProp]) {
-            this[NgrxSelect.subscriptionsProp][selectorName] = createSelect().subscribe(value => {
-              this[selectorName] = value;
-            });
+          for (const selectorName of Object.keys(this[NgrxSelect.selectorsProp])) {
+            this[NgrxSelect.subscriptionsProp][selectorName] = this[NgrxSelect.selectorsProp]
+              [selectorName]()
+              .subscribe(value => {
+                this[selectorName] = value;
+              });
           }
         };
       }
