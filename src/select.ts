@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
-import { takeUntil } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Injectable()
 export class NgrxSelect {
   static store: Store<any> | undefined = undefined;
+  static selectorNamesProp = Symbol();
+  static subscriptionsProp = Symbol();
+  static initSubscriptionsFnProp = Symbol();
   connect(store: Store<any>) {
     NgrxSelect.store = store;
   }
@@ -16,7 +19,6 @@ export class NgrxSelect {
 export function Select<TState = any, TValue = any>(
   selectorOrFeature?: string | Selector<TState, TValue>,
   autoSubscribe: boolean = false,
-  takeUntilProp: string = 'destroy$',
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
@@ -42,15 +44,60 @@ export function Select<TState = any, TValue = any>(
     };
 
     if (autoSubscribe) {
-      if (!target[takeUntilProp]) {
-        throw new Error(`Take until prop "${takeUntilProp}" is not exists`);
+      if (!target[NgrxSelect.selectorNamesProp]) {
+        target[NgrxSelect.selectorNamesProp] = [];
       }
 
-      createSelect()
-        .pipe(takeUntil(target[takeUntilProp]))
-        .subscribe(value => {
-          target[name] = value;
-        });
+      if (!target[NgrxSelect.selectorNamesProp].includes(name)) {
+        target[NgrxSelect.selectorNamesProp].push(name);
+      }
+
+      if (!target[NgrxSelect.initSubscriptionsFnProp]) {
+        target[NgrxSelect.initSubscriptionsFnProp] = () => {
+          const subscriptions: { [name: string]: Subscription } = {};
+
+          for (const selectorName of target[NgrxSelect.selectorNamesProp]) {
+            subscriptions[selectorName] = createSelect().subscribe(value => {
+              target[selectorName] = value;
+            });
+          }
+
+          return subscriptions;
+        };
+      }
+
+      const ngOnInitFn = target['ngOnInit'];
+      const initSubscriptionsFn = () => {
+        if (!target[NgrxSelect.subscriptionsProp] && target[NgrxSelect.initSubscriptionsFnProp]) {
+          target[NgrxSelect.subscriptionsProp] = target[NgrxSelect.initSubscriptionsFnProp]();
+        }
+      };
+      if (!ngOnInitFn) {
+        target['ngOnInit'] = initSubscriptionsFn;
+      } else {
+        target['ngOnInit'] = () => {
+          initSubscriptionsFn();
+          ngOnInitFn();
+        };
+      }
+
+      const cleanSubscriptionsFn = () => {
+        if (target[NgrxSelect.subscriptionsProp]) {
+          Object.keys(target[NgrxSelect.subscriptionsProp]).forEach(key => {
+            target[NgrxSelect.subscriptionsProp][key].unsubscribe();
+          });
+        }
+      };
+
+      const ngOnDestroyFn = target['ngOnDestroy'];
+      if (!ngOnDestroyFn) {
+        target['ngOnDestroy'] = cleanSubscriptionsFn;
+      } else {
+        target['ngOnDestroy'] = () => {
+          cleanSubscriptionsFn();
+          ngOnDestroyFn();
+        };
+      }
     } else if (delete target[name]) {
       // Redefine property
       Object.defineProperty(target, name, {

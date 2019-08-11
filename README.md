@@ -204,12 +204,14 @@ export class MyComponent {
     // Implied by the name of the member
     @Select() color: Observable<string>;
 
-    // Auto subscribe and take until specific observable
-    destroy$: Subject<any> = new Subject();
+    // Automatic subscription before ngOnInit and unsubscription after ngOnDestroy
     @Select('my.prop.color', true) color: string;
-    // or
-    takeUntilProp$: Subject<any> = new Subject();
-    @Select('my.prop.color', true, 'takeUntilProp$') color: string;
+    // If you want to subscribe in constructor, then you should manually call `this[NgrxSelect.initSubscriptionsFnProp]`
+    constructor() {
+        if (this[NgrxSelect.initSubscriptionsFnProp]) {
+            this[NgrxSelect.initSubscriptionsFnProp]();
+        }
+    }
 
     // Remap the slice to a new object
     @Select(state => state.map(f => 'blue')) color$: Observable<string>;
