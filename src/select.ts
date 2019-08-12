@@ -60,10 +60,12 @@ export function Select<TState = any, TValue = any>(
               [selectorName]()
               .subscribe(value => {
                 this[selectorName] = value;
-                if (!this['cdr']) {
+                if (!this.hasOwnProperty('cdr')) {
                   throw new Error('Component should have cdr property');
                 }
-                this['cdr'].markForCheck();
+                if (this['cdr']) {
+                  this['cdr'].markForCheck();
+                }
               });
           }
         };
