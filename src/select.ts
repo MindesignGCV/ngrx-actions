@@ -7,6 +7,7 @@ export class NgrxSelect {
   static selectorsProp = Symbol();
   static subscriptionsProp = Symbol();
   static initSubscriptionsFnProp = Symbol();
+  static cdrProp = Symbol();
   connect(store: Store<any>) {
     NgrxSelect.store = store;
   }
@@ -60,11 +61,15 @@ export function Select<TState = any, TValue = any>(
               [selectorName]()
               .subscribe(value => {
                 this[selectorName] = value;
-                if (!this.hasOwnProperty('cdr')) {
-                  throw new Error('Component should have cdr property');
+                if (!this.hasOwnProperty(NgrxSelect.cdrProp)) {
+                  throw new Error(
+                    `The component "${this.constructor.name}" should have property "this[NgrxSelect.cdrProp]".
+                      please add "this[NgrxSelect.cdrProp] = cdr;" in your constructor.
+                      (it should be placed before this[NgrxSelect.initSubscriptionProp]()).`
+                  );
                 }
-                if (this['cdr']) {
-                  this['cdr'].markForCheck();
+                if (this[NgrxSelect.cdrProp]) {
+                  this[NgrxSelect.cdrProp].markForCheck();
                 }
               });
           }
@@ -83,8 +88,8 @@ export function Select<TState = any, TValue = any>(
         target['ngOnInit'] = initSubscriptionsFn;
       } else {
         target['ngOnInit'] = function() {
-          initSubscriptionsFn.bind(this)();
           ngOnInitFn.bind(this)();
+          initSubscriptionsFn.bind(this)();
         };
       }
 

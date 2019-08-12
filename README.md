@@ -206,9 +206,9 @@ export class MyComponent {
 
     // Automatic subscription before ngOnInit and unsubscription after ngOnDestroy
     constructor(
-        // required
-        public cdr: ChangeDetectionRef
+        cdr: ChangeDetectionRef
     ) {
+        this[NgrxSelect.cdrProp] = cdr;
         // If you want to subscribe in constructor, then you should manually call `this[NgrxSelect.initSubscriptionsFnProp]`
         if (this[NgrxSelect.initSubscriptionsFnProp]) {
             this[NgrxSelect.initSubscriptionsFnProp]();
