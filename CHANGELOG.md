@@ -1,3 +1,6 @@
+# 8.4.0
+- When using autoSubscribe=true, the component should have cdr prop
+
 # 8.3.0
 - Changed automatic subscription params, now it not receives additional params, see readme.md to details
 

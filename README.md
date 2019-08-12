@@ -205,13 +205,16 @@ export class MyComponent {
     @Select() color: Observable<string>;
 
     // Automatic subscription before ngOnInit and unsubscription after ngOnDestroy
-    @Select('my.prop.color', true) color: string;
-    // If you want to subscribe in constructor, then you should manually call `this[NgrxSelect.initSubscriptionsFnProp]`
-    constructor() {
+    constructor(
+        // required
+        public cdr: ChangeDetectionRef
+    ) {
+        // If you want to subscribe in constructor, then you should manually call `this[NgrxSelect.initSubscriptionsFnProp]`
         if (this[NgrxSelect.initSubscriptionsFnProp]) {
             this[NgrxSelect.initSubscriptionsFnProp]();
         }
     }
+    @Select('my.prop.color', true) color: string;
 
     // Remap the slice to a new object
     @Select(state => state.map(f => 'blue')) color$: Observable<string>;
