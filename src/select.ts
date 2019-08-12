@@ -68,9 +68,7 @@ export function Select<TState = any, TValue = any>(
                       (it should be placed before this[NgrxSelect.initSubscriptionProp]()).`
                   );
                 }
-                if (this[NgrxSelect.cdrProp]) {
-                  this[NgrxSelect.cdrProp].markForCheck();
-                }
+                this[NgrxSelect.cdrProp].markForCheck();
               });
           }
         };
