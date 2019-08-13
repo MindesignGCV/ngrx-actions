@@ -8,6 +8,9 @@ export class NgrxSelect {
   static subscriptionsProp = Symbol();
   static initSubscriptionsFnProp = Symbol();
   static cdrProp = Symbol();
+  // prop name for array of additional pipes on subscription
+  static additionalPipesProp = Symbol();
+
   connect(store: Store<any>) {
     NgrxSelect.store = store;
   }
@@ -57,19 +60,21 @@ export function Select<TState = any, TValue = any>(
           this[NgrxSelect.subscriptionsProp] = {};
 
           for (const selectorName of Object.keys(this[NgrxSelect.selectorsProp])) {
-            this[NgrxSelect.subscriptionsProp][selectorName] = this[NgrxSelect.selectorsProp]
-              [selectorName]()
-              .subscribe(value => {
-                this[selectorName] = value;
-                if (!this.hasOwnProperty(NgrxSelect.cdrProp)) {
-                  throw new Error(
-                    `The component "${this.constructor.name}" should have property "this[NgrxSelect.cdrProp]".
+            const selector = this[NgrxSelect.additionalPipesProp]
+              ? this[NgrxSelect.selectorsProp][selectorName]().pipe(...this[NgrxSelect.additionalPipesProp])
+              : this[NgrxSelect.selectorsProp][selectorName]();
+
+            this[NgrxSelect.subscriptionsProp][selectorName] = selector.subscribe(value => {
+              this[selectorName] = value;
+              if (!this.hasOwnProperty(NgrxSelect.cdrProp)) {
+                throw new Error(
+                  `The component "${this.constructor.name}" should have property "this[NgrxSelect.cdrProp]".
                       please add "this[NgrxSelect.cdrProp] = cdr;" in your constructor.
                       (it should be placed before this[NgrxSelect.initSubscriptionProp]()).`
-                  );
-                }
-                this[NgrxSelect.cdrProp].markForCheck();
-              });
+                );
+              }
+              this[NgrxSelect.cdrProp].markForCheck();
+            });
           }
         };
       }
