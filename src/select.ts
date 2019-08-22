@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
+import { OperatorFunction } from 'rxjs';
 
 @Injectable()
 export class NgrxSelect {
@@ -21,7 +22,7 @@ export class NgrxSelect {
  */
 export function Select<TState = any, TValue = any>(
   selectorOrFeature?: string | Selector<TState, TValue>,
-  autoSubscribe: boolean = false,
+  autoSubscribe: boolean | Array<OperatorFunction<any, any>> = false,
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
@@ -60,9 +61,14 @@ export function Select<TState = any, TValue = any>(
           this[NgrxSelect.subscriptionsProp] = {};
 
           for (const selectorName of Object.keys(this[NgrxSelect.selectorsProp])) {
-            const selector = this[NgrxSelect.additionalPipesProp]
-              ? this[NgrxSelect.selectorsProp][selectorName]().pipe(...this[NgrxSelect.additionalPipesProp])
-              : this[NgrxSelect.selectorsProp][selectorName]();
+            const pipes = Array.isArray(autoSubscribe)
+              ? [...autoSubscribe, ...(this[NgrxSelect.additionalPipesProp] || [])]
+              : this[NgrxSelect.additionalPipesProp] || [];
+
+            const selector =
+              pipes.length > 0
+                ? this[NgrxSelect.selectorsProp][selectorName]().pipe(...pipes)
+                : this[NgrxSelect.selectorsProp][selectorName]();
 
             this[NgrxSelect.subscriptionsProp][selectorName] = selector.subscribe(value => {
               this[selectorName] = value;

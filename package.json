@@ -1,6 +1,6 @@
 {
   "name": "macs-ngrx-actions",
-  "version": "8.4.4",
+  "version": "8.5.0",
   "description": "Actions and Reducer Utility Library for NGRX",
   "main": "dist/index.js",
   "scripts": {

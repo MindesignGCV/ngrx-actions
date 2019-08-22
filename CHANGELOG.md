@@ -1,3 +1,6 @@
+# 8.5.0
+- Now autoSubscribe receives boolean or array of pipes
+
 # 8.4.0
 - When using autoSubscribe=true, the component should have cdr prop
 
