@@ -1,3 +1,6 @@
+# 8.6.0
+- Naw autoSubscribe receives CreatePipe function, it can be used to access to component in pipes.
+
 # 8.5.0
 - Now autoSubscribe receives boolean or array of pipes
 

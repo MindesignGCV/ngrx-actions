@@ -2,6 +2,14 @@ import { Injectable } from '@angular/core';
 import { Store, Selector } from '@ngrx/store';
 import { OperatorFunction } from 'rxjs';
 
+export function createPipe<T>(fn: (component: T) => OperatorFunction<any, any>): CreatePipe<T> {
+  return new CreatePipe(fn);
+}
+
+export class CreatePipe<T> {
+  constructor(public fn: (component: T) => OperatorFunction<any, any>) {}
+}
+
 @Injectable()
 export class NgrxSelect {
   static store: Store<any> | undefined = undefined;
@@ -9,8 +17,6 @@ export class NgrxSelect {
   static subscriptionsProp = Symbol();
   static initSubscriptionsFnProp = Symbol();
   static cdrProp = Symbol();
-  // prop name for array of additional pipes on subscription
-  static additionalPipesProp = Symbol();
 
   connect(store: Store<any>) {
     NgrxSelect.store = store;
@@ -22,7 +28,7 @@ export class NgrxSelect {
  */
 export function Select<TState = any, TValue = any>(
   selectorOrFeature?: string | Selector<TState, TValue>,
-  autoSubscribe: boolean | Array<OperatorFunction<any, any>> = false,
+  autoSubscribe: boolean | Array<OperatorFunction<any, any> | CreatePipe<any>> = false,
   ...paths: string[]
 ) {
   return function(target: any, name: string): void {
@@ -39,12 +45,25 @@ export function Select<TState = any, TValue = any>(
       fn = selectorOrFeature;
     }
 
-    const createSelect = () => {
-      const store = NgrxSelect.store;
-      if (!store) {
-        throw new Error('NgrxSelect not connected to store!');
-      }
-      return store.select(fn);
+    const createSelect = (pipes: Array<OperatorFunction<any, any> | CreatePipe<any>> = []) => {
+      return ctx => {
+        const store = NgrxSelect.store;
+        if (!store) {
+          throw new Error('NgrxSelect not connected to store!');
+        }
+        // @ts-ignore
+        return pipes.length === 0
+          ? store.select(fn)
+          : store.select(fn).pipe(
+              ...pipes.map(pipeOrCreatePipeFn => {
+                if (pipeOrCreatePipeFn instanceof CreatePipe) {
+                  return pipeOrCreatePipeFn.fn(ctx);
+                }
+
+                return pipeOrCreatePipeFn;
+              })
+            );
+      };
     };
 
     if (autoSubscribe) {
@@ -53,7 +72,7 @@ export function Select<TState = any, TValue = any>(
       }
 
       if (!target[NgrxSelect.selectorsProp][name]) {
-        target[NgrxSelect.selectorsProp][name] = createSelect;
+        target[NgrxSelect.selectorsProp][name] = createSelect(Array.isArray(autoSubscribe) ? autoSubscribe : []);
       }
 
       if (!target[NgrxSelect.initSubscriptionsFnProp]) {
@@ -61,26 +80,19 @@ export function Select<TState = any, TValue = any>(
           this[NgrxSelect.subscriptionsProp] = {};
 
           for (const selectorName of Object.keys(this[NgrxSelect.selectorsProp])) {
-            const pipes = Array.isArray(autoSubscribe)
-              ? [...autoSubscribe, ...(this[NgrxSelect.additionalPipesProp] || [])]
-              : this[NgrxSelect.additionalPipesProp] || [];
-
-            const selector =
-              pipes.length > 0
-                ? this[NgrxSelect.selectorsProp][selectorName]().pipe(...pipes)
-                : this[NgrxSelect.selectorsProp][selectorName]();
-
-            this[NgrxSelect.subscriptionsProp][selectorName] = selector.subscribe(value => {
-              this[selectorName] = value;
-              if (!this.hasOwnProperty(NgrxSelect.cdrProp)) {
-                throw new Error(
-                  `The component "${this.constructor.name}" should have property "this[NgrxSelect.cdrProp]".
+            this[NgrxSelect.subscriptionsProp][selectorName] = this[NgrxSelect.selectorsProp]
+              [selectorName](this)
+              .subscribe(value => {
+                this[selectorName] = value;
+                if (!this.hasOwnProperty(NgrxSelect.cdrProp)) {
+                  throw new Error(
+                    `The component "${this.constructor.name}" should have property "this[NgrxSelect.cdrProp]".
                       please add "this[NgrxSelect.cdrProp] = cdr;" in your constructor.
                       (it should be placed before this[NgrxSelect.initSubscriptionProp]()).`
-                );
-              }
-              this[NgrxSelect.cdrProp].markForCheck();
-            });
+                  );
+                }
+                this[NgrxSelect.cdrProp].markForCheck();
+              });
           }
         };
       }
@@ -132,7 +144,7 @@ export function Select<TState = any, TValue = any>(
           // @ts-ignore
           if (typeof __selector__fn_variable__name__ === 'undefined') {
             // tslint:disable-next-line
-            var __selector__fn_variable__name__ = createSelect.apply(this);
+            var __selector__fn_variable__name__ = createSelect()(this);
           }
 
           // @ts-ignore
